@@ -1,6 +1,5 @@
 import pandas as pd
 import requests
-from bs4 import BeautifulSoup
 import argparse
 import whois
 
@@ -25,24 +24,14 @@ class DomainScraper:
         except ValueError:
             return value
 
-    def extract_domain_info(self, html_response: str):
-        soup = BeautifulSoup(html_response, 'html.parser')
-        domain_table = soup.find('tbody', class_='row-hover')
-
-        if domain_table is None:
-            print("No domain table found...")
-            return
-
-        domain_rows = domain_table.find_all('tr')
+    def extract_domain_info(self, domain_rows: list):
         for row in domain_rows:
             self.process_row(row)
 
     def process_row(self, row):
-        td_elements = row.find_all('td')
-        if len(td_elements) < 9:
+        if len(row) == 0:
             return
-
-        domain_info = self.build_domain_info(td_elements)
+        domain_info = self.build_domain_info(row)
         if self.is_domain_suitable(domain_info):
             if self.check:
                 if not self.is_domain_accessible(domain_info['Domain']):
@@ -51,17 +40,17 @@ class DomainScraper:
                     domain_info['Status'] = 'Not Available'
             self.domain_list.append(domain_info)
 
-    def build_domain_info(self, td_elements):
+    def build_domain_info(self, domain_info):
         return {
-            'Domain': 'http://' + td_elements[0].text,
-            'Age': self.parse_to_int(td_elements[1].text),
-            'DA': self.parse_to_int(td_elements[2].text),
-            'PA': self.parse_to_int(td_elements[3].text),
-            'DR': self.parse_to_int(td_elements[4].text),
-            'CF': self.parse_to_int(td_elements[5].text),
-            'TF': self.parse_to_int(td_elements[6].text),
-            'Backlinks': self.parse_to_int(td_elements[7].text),
-            'Referring Domains': self.parse_to_int(td_elements[8].text),
+            'Domain': domain_info['domain_name'],
+            'Age': domain_info['age'],
+            'DA': domain_info['da'],
+            'PA': domain_info['pa'],
+            'DR': domain_info['dr'],
+            'CF': domain_info['cf'],
+            'TF': domain_info['tf'],
+            'Backlinks': domain_info['total_backlinks'],
+            'Referring Domains': domain_info['referring_domains']
         }
 
     def is_domain_suitable(self, domain_info):
@@ -72,11 +61,11 @@ class DomainScraper:
         return True
 
     def fetch_domain_data(self):
-        url = 'https://www.seekahost.com/free-expired-domains-list/'
+        url = 'https://www.seekahost.com/wp-content/themes/clickdo-main-theme/expiredlist/expire_domains.json'
         try:
-            response = requests.get(url, timeout=70, headers=self.header)
-            if response.status_code == 200:
-                self.extract_domain_info(response.text)
+            response = requests.get(url, timeout=70, headers=self.header).json()
+            if response['domain_list'] is not None:
+                self.extract_domain_info(response['domain_list'])
         except requests.exceptions.RequestException as e:
             print(f"An error occurred: {e}")
 
