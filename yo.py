@@ -23,6 +23,8 @@ class DomainScraper:
             return int(value)
         except ValueError:
             return value
+        except TypeError:
+            return 0
 
     def extract_domain_info(self, domain_rows: list):
         for row in domain_rows:
@@ -43,14 +45,14 @@ class DomainScraper:
     def build_domain_info(self, domain_info):
         return {
             'Domain': domain_info['domain_name'],
-            'Age': domain_info['age'],
-            'DA': domain_info['da'],
-            'PA': domain_info['pa'],
-            'DR': domain_info['dr'],
-            'CF': domain_info['cf'],
-            'TF': domain_info['tf'],
-            'Backlinks': domain_info['total_backlinks'],
-            'Referring Domains': domain_info['referring_domains']
+            'Age': self.parse_to_int(domain_info['age']),
+            'DA': self.parse_to_int(domain_info['da']),
+            'PA': self.parse_to_int(domain_info['pa']),
+            'DR': self.parse_to_int(domain_info['dr']),
+            'CF': self.parse_to_int(domain_info['cf']),
+            'TF': self.parse_to_int(domain_info['tf']),
+            'Backlinks': self.parse_to_int(domain_info['total_backlinks']),
+            'Referring Domains': self.parse_to_int(domain_info['referring_domains'])
         }
 
     def is_domain_suitable(self, domain_info):
